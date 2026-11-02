@@ -56,7 +56,7 @@ fn jpeg_taken_at(path: &Path, when: &str) {
 }
 
 #[test]
-fn capture_drafts_the_day_once_and_accept_keeps_it() {
+fn capture_drafts_the_day_once_and_keep_makes_it_an_entry() {
     std::env::set_var("TZ", "Asia/Seoul");
     let dir = TempDir::new().unwrap();
     std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
@@ -105,7 +105,7 @@ fn capture_drafts_the_day_once_and_accept_keeps_it() {
     assert_eq!(e.meta.traces.len(), 5);
     assert_eq!(e.local_date(), day());
 
-    // Drafts stay out of the timeline, search and stats until accepted.
+    // Drafts stay out of the timeline, search and stats until kept.
     assert_eq!(store.count(&ListFilter::default()).unwrap(), 0);
     assert!(store.search("refund", 10).unwrap().is_empty());
     assert_eq!(store.drafts().unwrap().len(), 1);
@@ -121,8 +121,8 @@ fn capture_drafts_the_day_once_and_accept_keeps_it() {
     let e = store.get(&draft.uuid).unwrap();
     assert!(e.body.contains("- 21:05 · shop-api · 1 commit (Ship it)"), "{}", e.body);
 
-    // Accepted: an ordinary entry, and its traces are never captured again.
-    store.accept_draft(&draft.uuid).unwrap();
+    // Kept: an ordinary entry, and its traces are never captured again.
+    store.keep_draft(&draft.uuid).unwrap();
     assert_eq!(store.count(&ListFilter::default()).unwrap(), 1);
     assert_eq!(store.search("refund", 10).unwrap().len(), 1);
     let after = store.capture(day(), &cfg).unwrap();
@@ -152,4 +152,44 @@ fn a_failing_source_does_not_stop_the_others() {
     assert!(r.errors.iter().all(|e| !e.contains("private-token")), "secret URL path leaked: {:?}", r.errors);
     let e = store.get(&r.draft.unwrap().uuid).unwrap();
     assert!(e.body.starts_with("Dentist\n\n- All day · Dentist"), "{}", e.body);
+}
+
+#[test]
+fn deleted_traces_stay_out_of_capture_until_restored() {
+    std::env::set_var("TZ", "Asia/Seoul");
+    let dir = TempDir::new().unwrap();
+    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    let mut store = Store::init(dir.path().join("Journal")).unwrap();
+    let ics = dir.path().join("cal.ics");
+    let events = |uids: &[&str]| {
+        let body: String = uids.iter().map(|u| format!("BEGIN:VEVENT\nUID:{u}\nSUMMARY:{u}\nDTSTART;VALUE=DATE:20261028\nEND:VEVENT\n")).collect();
+        format!("BEGIN:VCALENDAR\n{body}END:VCALENDAR\n")
+    };
+    std::fs::write(&ics, events(&["dentist"])).unwrap();
+    let cfg = CaptureConfig { calendars: vec![ics.to_string_lossy().into_owned()], ..Default::default() };
+
+    // Discarded: capture leaves it alone, even after the trash is gone and the index rebuilt.
+    let first = store.capture(day(), &cfg).unwrap().draft.unwrap();
+    store.delete(&first.uuid).unwrap();
+    assert_eq!(store.capture(day(), &cfg).unwrap().added, 0);
+    store.empty_trash().unwrap();
+    store.reindex(true).unwrap();
+    assert_eq!(store.capture(day(), &cfg).unwrap().added, 0);
+
+    // Something new on that day still gets its own draft.
+    std::fs::write(&ics, events(&["dentist", "lunch"])).unwrap();
+    let second = store.capture(day(), &cfg).unwrap();
+    assert_eq!(second.describe(), "1 event");
+    let second = second.draft.unwrap();
+
+    // Restored: the draft is back and its traces count as held again.
+    store.delete(&second.uuid).unwrap();
+    store.restore(&second.uuid).unwrap();
+    assert_eq!(store.drafts().unwrap().len(), 1);
+    assert_eq!(store.capture(day(), &cfg).unwrap().added, 0);
+
+    // A kept entry deleted for good does not come back as a draft either.
+    store.keep_draft(&second.uuid).unwrap();
+    store.delete_permanent(&second.uuid).unwrap();
+    assert_eq!(store.capture(day(), &cfg).unwrap().added, 0);
 }

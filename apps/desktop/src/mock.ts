@@ -228,7 +228,7 @@ export const mockInvoke = async (cmd: string, args: Record<string, unknown> = {}
       entries.set(id, e);
       return { date, added: 6, commits: 4, events: 2, photos: 0, draft: summary(e), created: true, errors: [] };
     }
-    case "accept_draft": {
+    case "keep_draft": {
       const e = (await mockInvoke("get_entry", { id: args.id })) as Entry;
       e.status = null;
       return e;
@@ -236,7 +236,7 @@ export const mockInvoke = async (cmd: string, args: Record<string, unknown> = {}
     case "recall": {
       const asOf = (args.asOf as string | null) ?? new Date().toISOString().slice(0, 10);
       const q = ((args.query as string | null) ?? "").toLowerCase();
-      return facts.filter((f) => !f.retracted_at && (!f.valid_from || f.valid_from <= asOf) && (!f.valid_to || f.valid_to > asOf) && (!args.topic || f.topic.toLowerCase() === String(args.topic).toLowerCase()) && f.text.toLowerCase().includes(q));
+      return facts.filter((f) => !f.retracted_at && (f.valid_from ?? f.recorded_at.slice(0, 10)) <= asOf && (!f.valid_to || f.valid_to > asOf) && (!args.topic || f.topic.toLowerCase() === String(args.topic).toLowerCase()) && f.text.toLowerCase().includes(q));
     }
     case "fact_history":
       return facts.filter((f) => f.topic === args.topic);

@@ -81,7 +81,7 @@ pub struct ListFilter {
     pub drafts: Drafts,
 }
 
-/// Captured drafts stay out of listings, search and stats until accepted.
+/// Captured drafts stay out of listings, search and stats until kept.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum Drafts {
     #[default]
@@ -345,7 +345,7 @@ impl Index {
                     slug,
                     name,
                     f.text,
-                    f.valid_from.map(|d| d.to_string()),
+                    f.starts().to_string(),
                     f.valid_to.map(|d| d.to_string()),
                     f.recorded_at.timestamp(),
                     f.closed_at.map(|t| t.timestamp()),
@@ -367,7 +367,7 @@ impl Index {
                AND (?2 IS NULL OR instr(lower(text), lower(?2)) > 0)
                AND recorded_utc <= ?4
                AND (retracted_utc IS NULL OR retracted_utc > ?4)
-               AND (valid_from IS NULL OR valid_from <= ?3)
+               AND valid_from <= ?3
                AND (valid_to IS NULL OR valid_to > ?3 OR (closed_utc IS NOT NULL AND closed_utc > ?4))
              ORDER BY topic_name, valid_from, recorded_utc",
         )?;
@@ -383,7 +383,7 @@ impl Index {
     /// Topic display names with the number of facts holding on `today`.
     pub fn topics(&self, today: NaiveDate) -> Result<Vec<(String, usize)>> {
         let mut stmt = self.conn.prepare(
-            "SELECT topic_name, SUM(CASE WHEN retracted_utc IS NULL AND (valid_from IS NULL OR valid_from <= ?1) AND (valid_to IS NULL OR valid_to > ?1) THEN 1 ELSE 0 END)
+            "SELECT topic_name, SUM(CASE WHEN retracted_utc IS NULL AND valid_from <= ?1 AND (valid_to IS NULL OR valid_to > ?1) THEN 1 ELSE 0 END)
              FROM facts GROUP BY topic ORDER BY topic_name",
         )?;
         let rows = stmt.query_map(params![today.to_string()], |r| Ok((r.get::<_, String>(0)?, r.get::<_, i64>(1)? as usize)))?;

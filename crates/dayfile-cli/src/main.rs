@@ -69,8 +69,8 @@ enum Cmd {
     Stats,
     /// List tags with counts.
     Tags,
-    /// List journals with counts.
-    Journals,
+    /// List notebooks with counts.
+    Notebooks,
     /// Rebuild the search index from files.
     Reindex {
         #[arg(long)]
@@ -87,7 +87,7 @@ enum Cmd {
     /// Captured drafts waiting for review.
     Drafts,
     /// Keep a draft as an ordinary entry. Discard one with `dayfile delete`.
-    Accept { id: String },
+    Keep { id: String },
     /// Where capture looks: git folders, calendar feeds, photo folders.
     Sources(SourcesArgs),
     /// Record a fact about your life in memory/<topic>.md.
@@ -183,8 +183,8 @@ enum ImportCmd {
     /// Import a Day One JSON export (.zip or extracted folder).
     Dayone {
         path: PathBuf,
-        /// Put everything in this journal instead of one per export file.
-        #[arg(long)]
+        /// Put everything in this notebook instead of one per export file.
+        #[arg(long = "notebook")]
         journal: Option<String>,
         /// Report what would be imported without writing.
         #[arg(long)]
@@ -197,7 +197,7 @@ struct AddArgs {
     text: Vec<String>,
     #[arg(short, long)]
     tag: Vec<String>,
-    #[arg(short, long)]
+    #[arg(short, long = "notebook")]
     journal: Option<String>,
     /// Override creation time, RFC 3339 (e.g. 2026-10-28T21:00:00+09:00).
     #[arg(long)]
@@ -211,7 +211,7 @@ struct AddArgs {
 
 #[derive(Args)]
 struct ListArgs {
-    #[arg(short, long)]
+    #[arg(short, long = "notebook")]
     journal: Option<String>,
     #[arg(short, long)]
     tag: Option<String>,
@@ -233,7 +233,7 @@ struct EditArgs {
     id: String,
     #[arg(long)]
     tag: Option<Vec<String>>,
-    #[arg(long)]
+    #[arg(long = "notebook")]
     journal: Option<String>,
     #[arg(long)]
     star: bool,
@@ -309,7 +309,7 @@ fn main() -> Result<()> {
                 let m = &e.meta;
                 println!("uuid:     {}", m.uuid);
                 println!("created:  {}  ({})", m.created.to_rfc3339(), m.timezone);
-                println!("journal:  {}", m.journal);
+                println!("notebook: {}", m.journal);
                 if !m.tags.is_empty() {
                     println!("tags:     {}", m.tags.join(", "));
                 }
@@ -317,7 +317,7 @@ fn main() -> Result<()> {
                     println!("starred:  yes");
                 }
                 if m.is_draft() {
-                    println!("status:   draft (dayfile accept {} to keep it)", short(&m.uuid));
+                    println!("status:   draft (dayfile keep {} to keep it)", short(&m.uuid));
                 }
                 println!("file:     {}", store.root().join(&e.path).display());
                 println!();
@@ -391,7 +391,7 @@ fn main() -> Result<()> {
             for t in store.templates()? {
                 let extra = [
                     (!t.tags.is_empty()).then(|| format!("tags: {}", t.tags.join(", "))),
-                    t.journal.as_ref().map(|j| format!("journal: {j}")),
+                    t.journal.as_ref().map(|j| format!("notebook: {j}")),
                 ]
                 .into_iter()
                 .flatten()
@@ -418,7 +418,7 @@ fn main() -> Result<()> {
                 println!("{n:5}  {t}");
             }
         }
-        Cmd::Journals => {
+        Cmd::Notebooks => {
             for (j, n) in store.journals()? {
                 println!("{n:5}  {j}");
             }
@@ -464,8 +464,8 @@ fn main() -> Result<()> {
             }
         }
         Cmd::Drafts => print_summaries(&store.drafts()?, cli.json)?,
-        Cmd::Accept { id } => {
-            let e = store.accept_draft(&id)?;
+        Cmd::Keep { id } => {
+            let e = store.keep_draft(&id)?;
             println!("{}  kept", short(&e.meta.uuid));
         }
         Cmd::Remember(a) => {

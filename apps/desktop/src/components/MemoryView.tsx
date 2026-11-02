@@ -27,7 +27,7 @@ export function MemoryView({ onOpen }: { onOpen: (id: string) => void }) {
     api.recall({ query: q, asOf: valid }).then(setHits);
   }, [query, asOf]);
 
-  const holds = (f: Fact) => !f.retracted_at && (!f.valid_from || f.valid_from <= asOf) && (!f.valid_to || f.valid_to > asOf);
+  const holds = (f: Fact) => !f.retracted_at && (f.valid_from ?? f.recorded_at.slice(0, 10)) <= asOf && (!f.valid_to || f.valid_to > asOf);
   const retract = async (f: Fact) => {
     await api.retractFact(f.id);
     if (topic) setHistory(await api.factHistory(topic));
@@ -83,7 +83,7 @@ export function MemoryView({ onOpen }: { onOpen: (id: string) => void }) {
 }
 
 function FactRow({ f, current, onOpen, onRetract, showTopic }: { f: Fact; current: boolean; onOpen: (id: string) => void; onRetract?: (f: Fact) => void; showTopic?: boolean }) {
-  const span = f.valid_from || f.valid_to ? `${f.valid_from ?? "…"} → ${f.valid_to ?? "now"}` : "since unknown";
+  const span = `${f.valid_from ?? f.recorded_at.slice(0, 10)} → ${f.valid_to ?? "now"}`;
   const state = f.retracted_at ? "retracted" : current ? "current" : "past";
   return (
     <div className={`fact ${state}`}>

@@ -93,7 +93,7 @@ fn tools_roundtrip_over_stdio() {
 
     let tools = c.request("tools/list", json!({}));
     let names: Vec<&str> = tools["tools"].as_array().unwrap().iter().map(|t| t["name"].as_str().unwrap()).collect();
-    for expected in ["list_entries", "get_entry", "search_entries", "on_this_day", "entries_on_date", "list_tags", "list_journals", "create_entry", "append_to_today", "update_entry", "delete_entry", "capture_day", "list_drafts", "accept_draft", "remember", "recall", "fact_history", "list_topics", "retract_fact"] {
+    for expected in ["list_entries", "get_entry", "search_entries", "on_this_day", "entries_on_date", "list_tags", "list_notebooks", "create_entry", "append_to_today", "update_entry", "delete_entry", "capture_day", "list_drafts", "keep_draft", "remember", "recall", "fact_history", "list_topics", "retract_fact"] {
         assert!(names.contains(&expected), "missing tool {expected}: {names:?}");
     }
     let create = tools["tools"].as_array().unwrap().iter().find(|t| t["name"] == "create_entry").unwrap();
@@ -170,7 +170,7 @@ fn capture_and_memory_over_stdio() {
     assert_eq!(c.call("list_drafts", json!({})).as_array().unwrap().len(), 1);
     assert_eq!(c.call("list_entries", json!({})), json!([]), "drafts stay out of listings");
     assert_eq!(c.call("capture_day", json!({}))["added"], 0);
-    c.call("accept_draft", json!({"id": id}));
+    c.call("keep_draft", json!({"id": id}));
     assert_eq!(c.call("list_entries", json!({})).as_array().unwrap().len(), 1);
 
     let busan = c.call("remember", json!({"topic": "Home", "text": "Lives in Busan", "valid_from": "2019-01-01", "source": &id[..8]}));

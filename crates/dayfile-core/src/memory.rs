@@ -38,6 +38,13 @@ pub struct Fact {
     pub replaces: Vec<String>,
 }
 
+impl Fact {
+    /// First day the fact holds: `valid_from`, else the day it was written down.
+    pub fn starts(&self) -> NaiveDate {
+        self.valid_from.unwrap_or_else(|| self.recorded_at.date_naive())
+    }
+}
+
 /// One `memory/<slug>.md` file.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TopicFile {
@@ -115,6 +122,14 @@ impl Store {
             return Err(Error::Invalid("a fact needs a topic and text".into()));
         }
         let ends = new.valid_from.unwrap_or_else(crate::entry::today);
+        // Checked before any write. Undated facts have no stated start to contradict.
+        for id in &new.replaces {
+            let file = self.find_fact(id)?;
+            let f = file.facts.iter().find(|f| &f.id == id).unwrap();
+            if let Some(start) = f.valid_from.filter(|s| f.closed_at.is_none() && *s > ends) {
+                return Err(Error::Invalid(format!("fact {id} starts on {start}, after {ends}, where this one would end it. Give a later start date, or retract it if it was never true")));
+            }
+        }
         for id in &new.replaces {
             let mut file = self.find_fact(id)?;
             let f = file.facts.iter_mut().find(|f| &f.id == id).unwrap();
@@ -174,7 +189,7 @@ impl Store {
         }
         let file = self.read_topic(&path)?;
         let mut facts: Vec<TopicFact> = file.facts.into_iter().map(|fact| TopicFact { topic: file.topic.clone(), fact }).collect();
-        facts.sort_by_key(|f| (f.fact.valid_from, f.fact.recorded_at));
+        facts.sort_by_key(|f| (f.fact.starts(), f.fact.recorded_at));
         Ok(facts)
     }
 

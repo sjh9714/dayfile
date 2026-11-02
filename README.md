@@ -53,7 +53,7 @@ dayfile sources add calendar "https://calendar.google.com/calendar/ical/…/basi
 dayfile sources add photos ~/Pictures/Phone
 dayfile capture                             # today's draft
 dayfile drafts                              # what waits for review
-dayfile accept <id>                         # keep it (or `dayfile delete <id>`)
+dayfile keep <id>                           # or discard it: `dayfile delete <id>`
 ```
 
 A draft looks like this, and stays out of the timeline, search and stats until

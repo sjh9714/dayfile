@@ -108,7 +108,7 @@ export function EntryEditor({ entry, reloadKey, journals, onChanged, onDeleted }
     await api.remove(entry.uuid);
     onDeleted(entry.uuid);
   };
-  const keep = async () => onChanged(await api.acceptDraft(entry.uuid));
+  const keep = async () => onChanged(await api.keepDraft(entry.uuid));
   const reveal = async () => {
     if (!IN_TAURI) return;
     revealItemInDir(await api.entryAbsPath(entry.uuid));
@@ -133,12 +133,12 @@ export function EntryEditor({ entry, reloadKey, journals, onChanged, onDeleted }
               onChange={(e) => {
                 const v = e.target.value;
                 if (v !== "__new") return void patch({ journal: v });
-                const name = prompt("Name for the new journal")?.trim();
+                const name = prompt("Name for the new notebook")?.trim();
                 if (name) patch({ journal: name });
               }}
             >
               {[...new Set([entry.journal, ...journals])].map((j) => <option key={j} value={j}>{j}</option>)}
-              <option value="__new">New journal…</option>
+              <option value="__new">New notebook…</option>
             </select>
             <span className={`save ${saved}`}>{saved === "saved" ? "Saved" : saved === "saving" ? "Saving…" : "Editing"}</span>
           </div>

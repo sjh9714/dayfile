@@ -102,7 +102,8 @@ impl Store {
         let photos = photos_on(cfg, date, tz, &mut report.errors);
 
         let keys: Vec<String> = commits.iter().map(|c| c.key.clone()).chain(events.iter().map(|e| e.key.clone())).chain(photos.iter().map(|p| p.key.clone())).collect();
-        let known = self.index_ref().known_traces(&keys)?;
+        let mut known = self.index_ref().known_traces(&keys)?;
+        known.extend(self.discarded_traces());
         let commits: Vec<Commit> = commits.into_iter().filter(|c| !known.contains(&c.key)).collect();
         let events: Vec<Event> = events.into_iter().filter(|e| !known.contains(&e.key)).collect();
         let mut photos: Vec<Photo> = photos.into_iter().filter(|p| !known.contains(&p.key)).collect();
@@ -166,7 +167,7 @@ impl Store {
 
     /// Keep a draft: it becomes an ordinary entry (its trace keys stay, so the
     /// same commits and photos are never captured again).
-    pub fn accept_draft(&mut self, id: &str) -> Result<crate::Entry> {
+    pub fn keep_draft(&mut self, id: &str) -> Result<crate::Entry> {
         let mut e = self.get(id)?;
         e.meta.status = None;
         self.write_entry(&e)?;

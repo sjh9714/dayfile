@@ -385,8 +385,8 @@ fn capture_day(state: State<AppState>, date: Option<NaiveDate>) -> CmdResult<Cap
 }
 
 #[tauri::command]
-fn accept_draft(state: State<AppState>, id: String) -> CmdResult<Entry> {
-    with_store(&state, |s| s.accept_draft(&id))
+fn keep_draft(state: State<AppState>, id: String) -> CmdResult<Entry> {
+    with_store(&state, |s| s.keep_draft(&id))
 }
 
 #[tauri::command]
@@ -559,7 +559,7 @@ pub fn run() {
             get_capture,
             set_capture,
             capture_day,
-            accept_draft,
+            keep_draft,
             recall,
             fact_history,
             list_topics,

@@ -13,7 +13,7 @@ import { MemoryView } from "./components/MemoryView";
 import { Settings, type Theme } from "./components/Settings";
 import { Onboarding } from "./components/Onboarding";
 import { localRfc3339, todayISO } from "./lib/dates";
-import { captureContext } from "./lib/enrich";
+import { entryContext } from "./lib/enrich";
 import { captureIfConfigured, describe } from "./lib/capture";
 import "./styles.css";
 
@@ -127,7 +127,11 @@ export default function App() {
   }, [toast]);
 
   // Pick up files written by the CLI, an agent over MCP, or a sync tool:
-  // incremental reindex on window focus and every 30s.
+  // incremental reindex on window focus and every 30s. The CLI and MCP share
+  // this index, so their writes report no changes here: always re-read, and
+  // reload an open entry whose body moved so typing cannot overwrite it.
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
   useEffect(() => {
     if (!status?.root) return;
     let busy = false;
@@ -135,10 +139,17 @@ export default function App() {
       if (busy) return;
       busy = true;
       try {
-        const s = await api.reindex(false);
-        if (s.added || s.updated || s.removed || s.skipped) {
-          await refreshList();
-          await refreshMeta();
+        await api.reindex(false);
+        await refreshList();
+        await refreshMeta();
+        const open = selectedRef.current;
+        if (open) {
+          const fresh = await api.get(open.uuid);
+          const cur = selectedRef.current;
+          if (cur?.uuid === fresh.uuid) {
+            setSelected(fresh);
+            if (fresh.body !== cur.body) setOpenSeq((n) => n + 1);
+          }
         }
       } catch { /* ignore */ } finally { busy = false; }
     };
@@ -189,7 +200,7 @@ export default function App() {
     setView("timeline");
     await refreshList();
     if (!date) {
-      captureContext().then(async (ctx) => {
+      entryContext().then(async (ctx) => {
         if (!ctx.location) return;
         const updated = await api.update(e.uuid, ctx);
         setSelected((cur) => (cur?.uuid === e.uuid ? { ...cur, location: updated.location, weather: updated.weather } : cur));

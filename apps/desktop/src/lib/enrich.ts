@@ -73,7 +73,7 @@ async function networkLocate(): Promise<Location | null> {
 }
 
 /** Best effort; resolves to whatever could be captured, never throws. */
-export async function captureContext(): Promise<{ location?: Location; weather?: Weather }> {
+export async function entryContext(): Promise<{ location?: Location; weather?: Weather }> {
   if (!captureEnabled()) return {};
   const location = (await geolocate()) ?? (await networkLocate());
   if (!location) return {};

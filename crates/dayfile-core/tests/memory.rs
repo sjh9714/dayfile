@@ -75,8 +75,8 @@ facts:
         texts(&store, Recall { topic: Some("Home".into()), as_of: Some(d("2026-10-01")), known_at: Some(known_at), ..Default::default() })
     };
     // In March the journal still thought Busan, and briefly also Daegu before that was retracted.
-    // Facts without a start date sort first.
-    assert_eq!(at("2026-02-02T00:00:00+09:00"), ["Lives in Daegu", "Lives in Busan"]);
+    // A fact without a start date sorts by the day it was recorded.
+    assert_eq!(at("2026-02-02T00:00:00+09:00"), ["Lives in Busan", "Lives in Daegu"]);
     assert_eq!(at("2026-03-01T00:00:00+09:00"), ["Lives in Busan"]);
     assert_eq!(at("2026-06-01T00:00:00+09:00"), ["Lives in Seoul"]);
 }
@@ -98,4 +98,27 @@ fn retract_search_topics_and_broken_files() {
     store.reindex(false).unwrap();
     assert!(store.problems().iter().any(|p| p.path == "memory/broken.md"), "{:?}", store.problems());
     assert_eq!(store.topics().unwrap().len(), 2);
+}
+
+#[test]
+fn an_undated_fact_holds_from_the_day_it_was_recorded() {
+    let (_d, mut store) = tmp_store();
+    store.remember(NewFact { topic: "People".into(), text: "Sam is a friend".into(), ..Default::default() }).unwrap();
+    assert_eq!(texts(&store, Recall::default()), vec!["Sam is a friend"]);
+    assert!(texts(&store, Recall { as_of: Some(d("2001-01-01")), ..Default::default() }).is_empty());
+}
+
+#[test]
+fn a_replacement_cannot_end_a_fact_before_it_starts() {
+    let (_d, mut store) = tmp_store();
+    let job = store.remember(NewFact { topic: "Work".into(), text: "Job A".into(), valid_from: Some(d("2099-01-01")), ..Default::default() }).unwrap();
+    let err = store.remember(NewFact { topic: "Work".into(), text: "Job B".into(), replaces: vec![job.fact.id.clone()], ..Default::default() }).unwrap_err();
+    assert!(err.to_string().contains("retract"), "{err}");
+    let history = store.fact_history("Work").unwrap();
+    assert_eq!(history.len(), 1, "nothing written");
+    assert_eq!(history[0].fact.valid_to, None);
+
+    // An undated fact never stated a start, so a backdated change may end it.
+    let undated = store.remember(NewFact { topic: "Home".into(), text: "Lives in Seoul".into(), ..Default::default() }).unwrap();
+    store.remember(NewFact { topic: "Home".into(), text: "Lives in Bundang".into(), valid_from: Some(d("2026-01-01")), replaces: vec![undated.fact.id], ..Default::default() }).unwrap();
 }

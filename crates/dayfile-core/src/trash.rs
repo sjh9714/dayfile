@@ -1,16 +1,22 @@
 //! Soft delete. Deleted entries move to `.dayfile/trash/` inside the journal
 //! folder (so they sync like everything else) and are purged after 30 days.
 //! File name: `<deleted_unix_secs>__<original file name>`.
+//!
+//! The traces of a deleted entry go to `.dayfile/discarded-traces`, one key per
+//! line, so capture does not bring them back. The file outlives the trash and
+//! is the only record of them once the trash is purged; restoring removes them.
 
 use crate::entry::Entry;
 use crate::store::{entry_rel_path, Store, MARKER_DIR};
 use crate::{frontmatter, Error, Result};
 use chrono::{DateTime, FixedOffset, TimeZone, Utc};
 use serde::Serialize;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 pub const TRASH_DIR: &str = ".dayfile/trash";
 pub const RETENTION_DAYS: i64 = 30;
+pub const DISCARDED_TRACES: &str = ".dayfile/discarded-traces";
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TrashedEntry {
@@ -42,7 +48,30 @@ impl Store {
         let dest = dir.join(format!("{}__{}", Utc::now().timestamp(), file_name));
         std::fs::rename(self.root().join(&entry.path), &dest)?;
         self.index_mut().remove(&entry.meta.uuid)?;
+        self.update_discarded(|d| d.extend(entry.meta.traces.iter().cloned()))?;
         Ok(entry)
+    }
+
+    /// Trace keys capture must leave alone because their entry was deleted.
+    pub(crate) fn discarded_traces(&self) -> HashSet<String> {
+        let text = std::fs::read_to_string(self.root().join(DISCARDED_TRACES)).unwrap_or_default();
+        text.lines().filter(|l| !l.is_empty()).map(str::to_string).collect()
+    }
+
+    fn update_discarded(&self, change: impl FnOnce(&mut HashSet<String>)) -> Result<()> {
+        let before = self.discarded_traces();
+        let mut keys = before.clone();
+        change(&mut keys);
+        if keys == before {
+            return Ok(());
+        }
+        let mut lines: Vec<String> = keys.into_iter().collect();
+        lines.sort();
+        let path = self.root().join(DISCARDED_TRACES);
+        let tmp = path.with_extension("tmp");
+        std::fs::write(&tmp, lines.iter().map(|l| format!("{l}\n")).collect::<String>())?;
+        std::fs::rename(&tmp, &path)?;
+        Ok(())
     }
 
     pub fn trash_list(&self) -> Result<Vec<TrashedEntry>> {
@@ -94,6 +123,7 @@ impl Store {
             std::fs::create_dir_all(parent)?;
         }
         std::fs::rename(&src, self.root().join(&rel))?;
+        self.update_discarded(|d| meta.traces.iter().for_each(|t| { d.remove(t); }))?;
         self.reindex(false)?;
         self.get(&hit.uuid)
     }
@@ -135,6 +165,7 @@ impl Store {
         let entry = self.get(id)?;
         std::fs::remove_file(self.root().join(&entry.path))?;
         self.index_mut().remove(&entry.meta.uuid)?;
+        self.update_discarded(|d| d.extend(entry.meta.traces.iter().cloned()))?;
         Ok(entry)
     }
 }

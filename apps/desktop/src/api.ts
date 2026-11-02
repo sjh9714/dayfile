@@ -56,7 +56,7 @@ export const api = {
   getCapture: () => invoke<CaptureConfig>("get_capture").then(normCapture),
   setCapture: (capture: CaptureConfig) => invoke<CaptureConfig>("set_capture", { capture }).then(normCapture),
   captureDay: (date?: string) => invoke<CaptureReport>("capture_day", { date: date ?? null }).then((r) => ({ ...r, draft: r.draft ? normSummary(r.draft) : null })),
-  acceptDraft: (id: string) => entry(invoke<Entry>("accept_draft", { id })),
+  keepDraft: (id: string) => entry(invoke<Entry>("keep_draft", { id })),
   recall: (q: { topic?: string; query?: string; asOf?: string } = {}) => invoke<Fact[]>("recall", { topic: q.topic ?? null, query: q.query ?? null, asOf: q.asOf ?? null }),
   factHistory: (topic: string) => invoke<Fact[]>("fact_history", { topic }),
   topics: () => invoke<[string, number][]>("list_topics"),
