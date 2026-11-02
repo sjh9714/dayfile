@@ -18,6 +18,7 @@ impl Client {
         cmd.env("TZ", "Asia/Seoul");
         // Never the developer's real app config: capture sources come from here.
         cmd.env("DAYFILE_CONFIG", root.parent().unwrap().join("config.json"));
+        cmd.env("DAYFILE_INDEX_DIR", root.parent().unwrap().join("idx"));
         cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit());
         let mut child = cmd.spawn().unwrap();
         let reader = BufReader::new(child.stdout.take().unwrap());
@@ -79,9 +80,8 @@ impl Drop for Client {
 
 fn fresh_root() -> (tempfile::TempDir, std::path::PathBuf) {
     let dir = tempfile::TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("idx"));
     let root = dir.path().join("Journal");
-    let st = Command::new(env!("CARGO_BIN_EXE_dayfile")).arg("--root").arg(&root).arg("init").status().unwrap();
+    let st = Command::new(env!("CARGO_BIN_EXE_dayfile")).arg("--root").arg(&root).arg("init").env("DAYFILE_INDEX_DIR", dir.path().join("idx")).status().unwrap();
     assert!(st.success());
     (dir, root)
 }

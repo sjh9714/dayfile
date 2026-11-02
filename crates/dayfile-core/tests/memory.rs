@@ -2,9 +2,11 @@ use chrono::{DateTime, NaiveDate};
 use dayfile_core::{NewFact, Recall, Store};
 use tempfile::TempDir;
 
+mod common;
+
 fn tmp_store() -> (TempDir, Store) {
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let store = Store::init(dir.path().join("Journal")).unwrap();
     (dir, store)
 }

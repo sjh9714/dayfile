@@ -4,6 +4,8 @@ use std::path::Path;
 use std::process::Command;
 use tempfile::TempDir;
 
+mod common;
+
 const DAY: (i32, u32, u32) = (2026, 10, 28);
 
 fn day() -> NaiveDate {
@@ -59,7 +61,7 @@ fn jpeg_taken_at(path: &Path, when: &str) {
 fn capture_drafts_the_day_once_and_keep_makes_it_an_entry() {
     std::env::set_var("TZ", "Asia/Seoul");
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let mut store = Store::init(dir.path().join("Journal")).unwrap();
 
     let code = dir.path().join("code");
@@ -137,7 +139,7 @@ fn capture_drafts_the_day_once_and_keep_makes_it_an_entry() {
 fn a_failing_source_does_not_stop_the_others() {
     std::env::set_var("TZ", "Asia/Seoul");
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let mut store = Store::init(dir.path().join("Journal")).unwrap();
     let ics = dir.path().join("cal.ics");
     std::fs::write(&ics, "BEGIN:VCALENDAR\nBEGIN:VEVENT\nUID:a\nSUMMARY:Dentist\nDTSTART;VALUE=DATE:20261028\nEND:VEVENT\nEND:VCALENDAR\n").unwrap();
@@ -158,7 +160,7 @@ fn a_failing_source_does_not_stop_the_others() {
 fn deleted_traces_stay_out_of_capture_until_restored() {
     std::env::set_var("TZ", "Asia/Seoul");
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let mut store = Store::init(dir.path().join("Journal")).unwrap();
     let ics = dir.path().join("cal.ics");
     let events = |uids: &[&str]| {

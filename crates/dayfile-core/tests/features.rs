@@ -2,9 +2,11 @@ use chrono::NaiveDate;
 use dayfile_core::{ListFilter, NewEntry, Store};
 use tempfile::TempDir;
 
+mod common;
+
 fn tmp_store() -> (TempDir, Store) {
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let store = Store::init(dir.path().join("Journal")).unwrap();
     (dir, store)
 }
@@ -130,7 +132,7 @@ fn stats_streak_counts_words() {
 #[test]
 fn folder_from_before_the_rename_keeps_its_trash() {
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let root = dir.path().join("Old");
     std::fs::create_dir_all(root.join("entries")).unwrap();
     std::fs::create_dir_all(root.join(".journal/trash")).unwrap();

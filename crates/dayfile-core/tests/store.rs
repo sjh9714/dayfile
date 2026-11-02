@@ -3,9 +3,11 @@ use dayfile_core::store::EntryPatch;
 use dayfile_core::{ListFilter, NewEntry, Store};
 use tempfile::TempDir;
 
+mod common;
+
 fn tmp_store() -> (TempDir, Store) {
     let dir = TempDir::new().unwrap();
-    std::env::set_var("DAYFILE_INDEX_DIR", dir.path().join("index"));
+    common::shared_index_dir();
     let store = Store::init(dir.path().join("Journal")).unwrap();
     (dir, store)
 }
