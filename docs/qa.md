@@ -59,7 +59,7 @@ Korean, a simulated Backspace is unreliable.
   Sleep) hides the banner even when the call succeeds.
 - **Location**: WKWebView geolocation fails silently; the app falls back to
   ipapi.co, so the first entry needs network.
-- **Capture and memory**: `scripts/qa/fixtures.sh "$QA_DIR"` before `qa_launch`
+- **Capture and memory**: `scripts/qa/fixtures.sh "$QA_DIR"` (`FIXTURE_LANG=en` for the demo) before `qa_launch`
   seeds a Korean day dated today: commits, calendar, an EXIF photo and facts,
   with sources in the QA config, never the real one. The app captures once per
   launch after unlock.
