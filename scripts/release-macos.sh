@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Everything macOS for a release: desktop DMGs (both archs), CLI binaries
 # (both archs, Developer ID signed + notarized so Gatekeeper lets them run
-# after `brew install`), the .mcpb bundle, and the Homebrew tap.
+# after `brew install`) and the .mcpb bundle, uploaded to the draft release.
+# The Homebrew tap follows with scripts/update-tap.sh once the release is published.
 #
-#   scripts/release-macos.sh v0.1.0
+#   scripts/release-macos.sh v0.2.0
 #
 # Signing uses the Developer ID certificate in the login keychain.
 # Notarization runs when a notarytool keychain profile named "journal" exists:
@@ -61,8 +62,9 @@ fi
 mkdir -p "$work/mcpb/server"
 lipo -create "${CLIS[@]}" -output "$work/mcpb/server/dayfile-darwin"
 codesign --force --options runtime --timestamp --sign "$IDENTITY" "$work/mcpb/server/dayfile-darwin"
-curl -sSL "$BASE/dayfile-x86_64-unknown-linux-gnu" -o "$work/mcpb/server/dayfile-linux"
-curl -sSL "$BASE/dayfile-x86_64-pc-windows-msvc.exe" -o "$work/mcpb/server/dayfile-win.exe"
+# gh, not curl: the release is still a draft here, and draft assets 404 without auth.
+gh release download "$TAG" --repo "$REPO" -p dayfile-x86_64-unknown-linux-gnu -O "$work/mcpb/server/dayfile-linux"
+gh release download "$TAG" --repo "$REPO" -p dayfile-x86_64-pc-windows-msvc.exe -O "$work/mcpb/server/dayfile-win.exe"
 chmod +x "$work/mcpb/server/"*
 sed "s/__VERSION__/$VERSION/g" "$ROOT/packaging/mcpb/manifest.json" > "$work/mcpb/manifest.json"
 (cd "$work/mcpb" && zip -qr "../dayfile-$VERSION.mcpb" manifest.json server)
@@ -73,5 +75,6 @@ gh release upload "$TAG" --repo "$REPO" --clobber "${DMGS[@]}" "${CLIS[@]}" "$MC
 echo "uploaded: $(printf '%s ' "${DMGS[@]##*/}" "${CLIS[@]##*/}" "${MCPB##*/}")"
 echo "mcpb sha256: $(shasum -a 256 "$MCPB" | cut -d' ' -f1)"
 
-# ---- Homebrew tap (sha256 of the CLI binaries changed) ----
-"$ROOT/scripts/update-tap.sh" "$TAG"
+# ---- Homebrew tap ----
+# The cask points at public download URLs, which exist only once the release is published.
+echo "after publishing the release: scripts/update-tap.sh $TAG"

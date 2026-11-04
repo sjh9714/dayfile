@@ -25,9 +25,11 @@ Developer ID certificate:
 ```sh
 # once: store notarization credentials in the keychain (never in the repo)
 xcrun notarytool store-credentials journal --apple-id <email> --team-id <TEAMID> --password <app-specific-password>
-# per release: DMGs + CLI binaries signed and notarized, .mcpb bundle, Homebrew tap
+# per release, while the release is a draft: DMGs + CLI binaries signed and notarized, .mcpb bundle
 scripts/release-macos.sh v0.1.0
-# then bump the version and fileSha256 in server.json and publish to the MCP registry
+# after publishing (the cask and the registry point at public download URLs)
+scripts/update-tap.sh v0.1.0
+# bump the version, URL and fileSha256 in server.json, then publish to the MCP registry
 mcp-publisher publish
 ```
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Regenerate the Homebrew formula in sjh9714/homebrew-tap from a published release.
-#   scripts/update-tap.sh v0.1.0
+#   scripts/update-tap.sh v0.2.0
 set -euo pipefail
 TAG="${1:?usage: $0 <tag>}"
 VERSION="${TAG#v}"
@@ -8,7 +8,8 @@ REPO="${GITHUB_REPO:-sjh9714/dayfile}"
 TAP_REPO="${TAP_REPO:-sjh9714/homebrew-tap}"
 BASE="https://github.com/$REPO/releases/download/$TAG"
 work=$(mktemp -d)
-sha() { curl -sSL "$BASE/$1" -o "$work/$1" && shasum -a 256 "$work/$1" | cut -d' ' -f1; }
+# -f: a draft or missing release must fail here, not hash a 404 page.
+sha() { curl -fsSL "$BASE/$1" -o "$work/$1" && shasum -a 256 "$work/$1" | cut -d' ' -f1; }
 ARM=$(sha dayfile-aarch64-apple-darwin)
 X64=$(sha dayfile-x86_64-apple-darwin)
 LNX=$(sha dayfile-x86_64-unknown-linux-gnu)
