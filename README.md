@@ -1,8 +1,10 @@
 # Dayfile
 
-Your day drafts itself from what you already left behind (commits, calendar,
-photos), you add how it felt, and the journal becomes long-term memory your AI
-agent can read. All of it is plain Markdown in a folder you own.
+A journal in a folder of Markdown files you own. Three things set it apart:
+each day drafts itself from the traces you already left (git commits, calendar,
+photos); the memory your agent builds from it records not only what is true
+but since when and when the journal learned it; and nothing is behind an
+account or a subscription.
 
 ![Dayfile demo: a drafted day, the entry, memory over time, and an agent answering from the journal over MCP](docs/demo.gif)
 
@@ -10,7 +12,10 @@ agent can read. All of it is plain Markdown in a folder you own.
 
 Journals die because writing every day is work. Agents forget you because
 their memory lives in someone else's cloud, in a form you cannot read or fix.
-Dayfile does both jobs with one folder.
+Dayfile does both jobs with one folder. Day One has an agent connector too, on
+Mac with a subscription, against its own database; Dayfile's version is a
+folder you can open, diff, sync and correct, and it is the only one that reads
+your commits.
 
 - **A day that writes its first draft.** Point it at your code folders, a
   calendar feed and a photo folder. When you open the app (or at your
@@ -28,8 +33,8 @@ Dayfile does both jobs with one folder.
   Dropbox, Syncthing or git. The SQLite index is a cache rebuilt from the
   files. See [`docs/format.md`](docs/format.md).
 - **A real journal app.** Timeline, calendar, On This Day, full-text search
-  (works for Korean, Japanese, Chinese), tags, templates, a passcode lock, a
-  reminder, a trash with Undo, and Day One import.
+  (works for Korean, Japanese, Chinese), tags, templates, a passcode screen,
+  a reminder, a trash with Undo, and Day One import.
 
 ## Install
 
@@ -132,8 +137,11 @@ next time it is focused.
 
 No account, no server, no telemetry. Capture reads only the folders and feeds
 you list, only when you or your agent ask (or at app launch and the reminder).
-Calendar and git sources stay in the app's config on this machine, not in the
-synced folder. Optional location and weather for new entries use the OS
+A git source covers every repository under that folder (four levels deep),
+your own commits only, so keep work repositories out of the folders you list
+if their commit messages should not reach the journal or the agent you review
+it with. Calendar and git sources stay in the app's config on this machine,
+not in the synced folder. Optional location and weather for new entries use the OS
 location service or a city-level guess from ipapi.co, then Open-Meteo; one
 toggle turns that off.
 
@@ -145,11 +153,22 @@ scripts/check.sh                       # tests, clippy, web build
 cd apps/desktop && npm run tauri build
 ```
 
-## Status
+## Status and limitations
 
 Desktop app (macOS, Windows, Linux), CLI, MCP, capture from git, calendars and
 photos, bi-temporal memory, Day One import. Not yet: mobile, built-in sync,
 encryption at rest, more capture sources (shell history, browser).
+
+Know these before you rely on it:
+
+- The passcode screen hides the app. It does not encrypt anything; the files
+  stay plain text on disk.
+- An agent's `update_entry` replaces the body and there is no undo for it
+  (deletes go to the trash, edits do not). Keep the journal folder in git or
+  a synced folder with version history if agents may write to it, or pass
+  `--read-only`.
+- Windows and Linux builds come from CI and have not been tried on real
+  hardware.
 
 MIT. "Day One" is a trademark of Automattic; this project only reads its
 export format.

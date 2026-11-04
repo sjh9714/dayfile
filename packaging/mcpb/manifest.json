@@ -70,8 +70,8 @@
       "description": "Tags with counts"
     },
     {
-      "name": "list_journals",
-      "description": "Journals with counts"
+      "name": "list_notebooks",
+      "description": "Notebooks with counts"
     },
     {
       "name": "create_entry",
@@ -98,7 +98,7 @@
       "description": "Drafts waiting for review"
     },
     {
-      "name": "accept_draft",
+      "name": "keep_draft",
       "description": "Keep a draft as an entry"
     },
     {

@@ -3,7 +3,7 @@ name = "dayfile-cli"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Command-line interface for journal"
+description = "Command-line interface and MCP server for Dayfile"
 
 [[bin]]
 name = "dayfile"

@@ -3,7 +3,7 @@ name = "dayfile-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "Core library for journal: Markdown-file journal with SQLite index"
+description = "Core library for Dayfile: Markdown-file journal with SQLite index"
 
 [dependencies]
 anyhow.workspace = true

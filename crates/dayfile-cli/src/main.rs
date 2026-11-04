@@ -184,7 +184,7 @@ enum ImportCmd {
     Dayone {
         path: PathBuf,
         /// Put everything in this notebook instead of one per export file.
-        #[arg(long = "notebook")]
+        #[arg(long = "notebook", value_name = "NOTEBOOK")]
         journal: Option<String>,
         /// Report what would be imported without writing.
         #[arg(long)]
@@ -197,7 +197,7 @@ struct AddArgs {
     text: Vec<String>,
     #[arg(short, long)]
     tag: Vec<String>,
-    #[arg(short, long = "notebook")]
+    #[arg(short = 'b', long = "notebook", value_name = "NOTEBOOK")]
     journal: Option<String>,
     /// Override creation time, RFC 3339 (e.g. 2026-10-28T21:00:00+09:00).
     #[arg(long)]
@@ -211,7 +211,7 @@ struct AddArgs {
 
 #[derive(Args)]
 struct ListArgs {
-    #[arg(short, long = "notebook")]
+    #[arg(short = 'b', long = "notebook", value_name = "NOTEBOOK")]
     journal: Option<String>,
     #[arg(short, long)]
     tag: Option<String>,
@@ -233,7 +233,7 @@ struct EditArgs {
     id: String,
     #[arg(long)]
     tag: Option<Vec<String>>,
-    #[arg(long = "notebook")]
+    #[arg(long = "notebook", value_name = "NOTEBOOK")]
     journal: Option<String>,
     #[arg(long)]
     star: bool,
